@@ -2,7 +2,7 @@
   "name": "backend-revise",
   "version": "1.0.0",
   "description": "a backend revision - youtube(clone)",
-  "type" : "module",
+  "type": "module",
   "main": "index.js",
   "scripts": {
     "dev": "nodemon src/index.js"
@@ -12,5 +12,9 @@
     "backend"
   ],
   "author": "Ajinkya Kingre",
-  "license": "ISC"
+  "license": "ISC",
+  "devDependencies": {
+    "nodemon": "^3.1.4",
+    "prettier": "^3.3.3"
+  }
 }
