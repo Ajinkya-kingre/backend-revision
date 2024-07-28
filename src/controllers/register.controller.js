@@ -4,6 +4,7 @@ import { User } from "../models/user.model.js";
 import { uploadOnCloudinary } from "../utils/cloudinary.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import jwt from "jsonwebtoken";
+import mongoose, { Mongoose } from "mongoose";
 
 const generateAccessTokenAndRefreshToken = async (userId) => {
   try {
@@ -339,6 +340,56 @@ const getChannelProfile = asyncHandler(async (req, res) => {
     .json(new ApiResponse(200, channel[0], "User Fetched Successfully!!"));
 });
 
+const getWatchHistory = asyncHandler(async (req, res) => {
+  const user = await User.aggregate([
+    {
+      $match: {
+        _id: mongoose.Types.ObjectId.createFromHexString(req.user._id),
+      }
+    },
+    {
+      $lookup : {
+        from : "videos",
+        foreignField : "_id",
+        localField : "watchHistory",
+        as : "watchHistory",
+        pipeline : [
+          {
+            $lookup : {
+              from : "users",
+              foreignField : "_id",
+              localField : "owner",
+              as : "owner",
+              pipeline : [
+              {
+                $project : {
+                  fullName : 1,
+                  username : 1,
+                  avatar : 1
+                }
+              }
+            ]
+            },
+          },
+          {
+            $addFields : {
+              $first : "$owner"
+            }
+          }
+        ]
+      }
+    },
+  ]);
+
+   return res
+   .status(200)
+   .json(
+    new ApiResponse(
+      200, $owner, "watchHistory Fetched Successfully!! "
+    )
+   )
+});
+
 export {
   registerUser,
   loginUser,
@@ -348,4 +399,6 @@ export {
   getCurrentUser,
   updateAccountDetails,
   getChannelProfile,
+  getWatchHistory
 };
+
