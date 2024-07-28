@@ -4,7 +4,7 @@ import { User } from "../models/user.model.js";
 import { uploadOnCloudinary } from "../utils/cloudinary.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import jwt from "jsonwebtoken";
-import mongoose, { Mongoose } from "mongoose";
+import mongoose from "mongoose";
 
 const generateAccessTokenAndRefreshToken = async (userId) => {
   try {
@@ -123,7 +123,7 @@ const loginUser = asyncHandler(async (req, res) => {
   const { accessToken, refreshToken } =
     await generateAccessTokenAndRefreshToken(user._id);
 
-  const loggedInUser = await User.findById(user._id);
+  const loggedInUser = await User.findById(user._id).select("-password -refreshToken");
 
   const options = {
     httpOnly: true,
@@ -245,7 +245,7 @@ const changeCurrentPassword = asyncHandler(async (req, res) => {
 const getCurrentUser = asyncHandler(async (req, res) => {
   return res
     .status(200)
-    .json(201, req.user, "Fetched Current User Successfully!!!");
+    .json(new ApiResponse(201, req.user, "Fetched Current User Successfully!!!"));
 });
 
 const updateAccountDetails = asyncHandler(async (req, res) => {
@@ -302,13 +302,13 @@ const getChannelProfile = asyncHandler(async (req, res) => {
     },
     {
       $addFields: {
-        $subscribersCount: {
+        subscribersCount: {
           $size: "$subscribers",
         },
-        $channelsSubscribedTo: {
+        channelsSubscribedTo: {
           $size: "$subscribedTo",
         },
-        $isSubscribed: {
+        isSubscribed: {
           $cond: {
             if: { $in: [req.user?._id, "$subscribers.subscribers"] },
             then: true,
@@ -319,12 +319,12 @@ const getChannelProfile = asyncHandler(async (req, res) => {
     },
     {
       $project: {
-        $username: 1,
-        $email: 1,
-        $fullName: 1,
-        $channelsSubscribedTo: 1,
-        $subscribersCount: 1,
-        $isSubscribed: 1,
+        username: 1,
+        email: 1,
+        fullName: 1,
+        channelsSubscribedTo: 1,
+        subscribersCount: 1,
+        isSubscribed: 1,
         avatar: 1,
         coverImage: 1,
       },
@@ -344,7 +344,7 @@ const getWatchHistory = asyncHandler(async (req, res) => {
   const user = await User.aggregate([
     {
       $match: {
-        _id: mongoose.Types.ObjectId.createFromHexString(req.user._id),
+        _id: new mongoose.Types.ObjectId(req.user._id),
       }
     },
     {
@@ -373,7 +373,9 @@ const getWatchHistory = asyncHandler(async (req, res) => {
           },
           {
             $addFields : {
-              $first : "$owner"
+              owner : {
+                $first : "$owner"
+              }
             }
           }
         ]
@@ -385,7 +387,7 @@ const getWatchHistory = asyncHandler(async (req, res) => {
    .status(200)
    .json(
     new ApiResponse(
-      200, $owner, "watchHistory Fetched Successfully!! "
+      200, user[0].watchHistory, "watchHistory Fetched Successfully!! "
     )
    )
 });
